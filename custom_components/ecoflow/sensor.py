@@ -97,7 +97,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                     client, bms[0], "battery_capacity_full", "Main battery full capacity", 0),
                 CapacityEntity(
                     client, bms[0], "battery_capacity_remain", "Main battery remaining capacity", 0),
-#                SingleLevelEntity(client, bms[0], "battery_level_f32", "Main battery", 0),
                 LevelEntity(client, bms[0], "battery_level_f32", "Main Battery", 0),
                 LevelEntity(client, client.ems, "battery_main_level_f32", "SOC"),
                 TempEntity(client, client.inverter, "ac_out_temp",
@@ -164,8 +163,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                         client, bms[1], "battery_cycles", "Extra1 battery cycles", 1),
                     CyclesEntity(
                         client, bms[2], "battery_cycles", "Extra2 battery cycles", 2),
-#                    SingleLevelEntity(client, bms[1], "battery_level_f32", "Extra1 battery", 1),
-#                    SingleLevelEntity(client, bms[2], "battery_level_f32", "Extra2 battery", 2),
                     LevelEntity(client, bms[1], "battery_level_f32", "Extra1 Battery", 1),
                     LevelEntity(client, bms[2], "battery_level_f32", "Extra2 Battery", 2),
                     CapacityEntity(
