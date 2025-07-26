@@ -63,6 +63,9 @@ def _parse_dict(d: bytes, types: Iterable[tuple[str, int, Callable[[bytes], Any]
 def _to_float(d: bytes) -> float:
     return struct.unpack("<f", d)[0]
 
+def _to_float_round(d: bytes):
+    z = _to_float(d)
+    return round(z,2)
 
 def _to_int(d: bytes):
     return int.from_bytes(d, "little")
@@ -174,9 +177,9 @@ def parse_bms_delta(d: bytes):
         ("battery_current", 4, _to_int),
         ("battery_temp", 1, _to_int),
         ("_open_bms_idx", 1, _to_int),
-        ("battery_capacity_design", 4, _to_int),
-        ("battery_capacity_remain", 4, _to_int),
-        ("battery_capacity_full", 4, _to_int),
+        ("battery_capacity_design", 4, _to_int_ex(div=1000)),
+        ("battery_capacity_remain", 4, _to_int_ex(div=1000)),
+        ("battery_capacity_full", 4, _to_int_ex(div=1000)),
         ("battery_cycles", 4, _to_int),
         ("_soh", 1, _to_int),
         ("battery_voltage_max", 2, _to_int_ex(div=1000)),
@@ -188,7 +191,7 @@ def parse_bms_delta(d: bytes):
         ("battery_fault", 1, _to_int),
         ("_sys_stat_reg", 1, _to_int),
         ("_tag_chg_current", 4, _to_int),
-        ("battery_level_f32", 4, _to_float),
+        ("battery_level_f32", 4, _to_float_round),
         ("battery_in_power", 4, _to_int),
         ("battery_out_power", 4, _to_int),
         ("battery_remain", 4, _to_timedelta_min),
@@ -237,8 +240,8 @@ def parse_ems_delta(d: bytes):
         ("_state_charge", 1, _to_int),
         ("_chg_cmd", 1, _to_int),
         ("_dsg_cmd", 1, _to_int),
-        ("battery_main_voltage", 4, _to_int_ex(div=1000)),
-        ("battery_main_current", 4, _to_int_ex(div=1000)),
+        ("battery_charge_voltage", 4, _to_int_ex(div=1000)),
+        ("battery_charge_current", 4, _to_int_ex(div=1000)),
         ("_fan_level", 1, _to_int),
         ("battery_level_max", 1, _to_int),
         ("model", 1, _to_int),
@@ -248,7 +251,7 @@ def parse_ems_delta(d: bytes):
         ("battery_remain_charge", 4, _to_timedelta_min),
         ("battery_remain_discharge", 4, _to_timedelta_min),
         ("battery_main_normal", 1, _to_int),
-        ("battery_main_level_f32", 4, _to_float),
+        ("battery_main_level_f32", 4, _to_float_round),
         ("_is_connect", 3, _to_int),
         ("_max_available_num", 1, _to_int),
         ("_open_bms_idx", 1, _to_int),
@@ -380,9 +383,9 @@ def parse_mppt_delta(d: bytes):
         ("dc_in_voltage", 4, _to_int_ex(div=10)),
         ("dc_in_current", 4, _to_int_ex(div=100)),
         ("dc_in_power", 2, _to_int_ex(div=10)),
-        ("_volt_?_out", 4, _to_int),
-        ("_curr_?_out", 4, _to_int),
-        ("_watts_?_out", 2, _to_int),
+        ("mppt_out_voltage", 4, _to_int_ex(div=10)),
+        ("mppt_out_current", 4, _to_int_ex(div=100)),
+        ("mppt_out_power", 2, _to_int_ex(div=10)),
         ("dc_in_temp", 2, _to_int),
         ("dc_in_type", 1, _to_int),
         ("dc_in_type_config", 1, _to_int),
