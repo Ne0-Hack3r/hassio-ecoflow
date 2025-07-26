@@ -5,10 +5,15 @@ import reactivex.operators as ops
 from homeassistant.components.sensor import (SensorDeviceClass, SensorEntity,
                                              SensorStateClass)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (ELECTRIC_CURRENT_AMPERE,
-                                 ELECTRIC_POTENTIAL_VOLT, ENERGY_WATT_HOUR,
-                                 FREQUENCY_HERTZ, PERCENTAGE, POWER_WATT,
-                                 TEMP_CELSIUS)
+from homeassistant.const import PERCENTAGE
+from homeassistant.const import (
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfFrequency,
+    UnitOfPower,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -66,16 +71,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 client.bms.pipe(select_bms(2), ops.share()),
             )
             entities.extend([
+                EnergyEntity(client, client.pd, "ac_in_energy",
+                             "AC input energy"),
+                EnergyEntity(client, client.pd, "ac_out_energy",
+                             "AC output energy"),
+                EnergyEntity(client, client.pd, "car_in_energy",
+                             "Car input energy"),
+                EnergyEntity(client, client.pd, "car_out_energy",
+                             "Car output energy"),
                 CurrentEntity(client, client.mppt, "dc_in_current",
                               "DC input current"),
+                CurrentEntity(client, client.mppt, "mppt_out_current",
+                              "MPPT output current"),
+                CurrentEntity(client, client.ems, "battery_charge_current",
+                              "Battery charge current"),
+                CurrentEntity(client, client.mppt, "car_out_current",
+                              "Car output current"),
                 CyclesEntity(
                     client, bms[0], "battery_cycles", "Main battery cycles", 0),
                 RemainEntity(client, client.ems,
                              "battery_remain_charge", "Remain charge"),
                 RemainEntity(client, client.ems,
                              "battery_remain_discharge", "Remain discharge"),
-                SingleLevelEntity(
-                    client, bms[0], "battery_level_f32", "Main battery", 0),
+                CapacityEntity(
+                    client, bms[0], "battery_capacity_full", "Main battery full capacity", 0),
+                CapacityEntity(
+                    client, bms[0], "battery_capacity_remain", "Main battery remaining capacity", 0),
+#                SingleLevelEntity(client, bms[0], "battery_level_f32", "Main battery", 0),
+                LevelEntity(client, bms[0], "battery_level_f32", "Main Battery", 0),
+                LevelEntity(client, client.ems, "battery_main_level_f32", "SOC"),
                 TempEntity(client, client.inverter, "ac_out_temp",
                            "AC temperature"),
                 TempEntity(client, bms[0], "battery_temp",
@@ -88,12 +112,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                            "USB-C left temperature"),
                 TempEntity(client, client.pd, "typec_out2_temp",
                            "USB-C right temperature"),
+                TempEntity(client, bms[0], "battery_temp_min",
+                           "Main cell min temp", 0),
+                TempEntity(client, bms[0], "battery_temp_max",
+                           "Main cell max temp", 0),
+                TempEntity(client, bms[0], "battery_mos_temp_min",
+                           "Main min mos temp", 0),
+                TempEntity(client, bms[0], "battery_mos_temp_max",
+                           "Main max mos temp", 0),
                 VoltageEntity(client, client.mppt, "dc_in_voltage",
                               "DC input voltage"),
+                VoltageEntity(client, client.mppt, "mppt_out_voltage",
+                              "MPPT output voltage"),
+                VoltageEntity(client, client.ems, "battery_charge_voltage",
+                              "Battery charge voltage"),
+                VoltageEntity(client, client.ems, "battery_main_voltage_min",
+                              "Main Batt Min Voltage"),
+                VoltageEntity(client, client.ems, "battery_main_voltage_max",
+                              "Main Batt Max Voltage"),
+                VoltageEntity(client, bms[0], "battery_voltage",
+                              "Main Batt Voltage", 0),
+                VoltageEntity(client, bms[0], "battery_voltage_min",
+                              "Main Cell Min Voltage", 0),
+                VoltageEntity(client, bms[0], "battery_voltage_max",
+                              "Main Cell Max Voltage", 0),
+                VoltageEntity(client, client.mppt, "car_out_voltage",
+                              "Car output voltage"),
+                PowerEntity(client, bms[0], "battery_in_power", "Main BMS in", 0),
+                PowerEntity(client, bms[0], "battery_out_power", "Main BMS out", 0),
                 WattsEntity(client, client.inverter,
                             "ac_in_power", "AC input"),
                 WattsEntity(client, client.mppt, "dc_in_power",
                             "DC input", real=True),
+                WattsEntity(client, client.mppt, "mppt_out_power",
+                            "MPPT output", real=True),
                 WattsEntity(client, client.mppt,
                             "car_consumption", "Car output + loss", real=True),
                 WattsEntity(client, client.mppt,
@@ -112,14 +164,54 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                         client, bms[1], "battery_cycles", "Extra1 battery cycles", 1),
                     CyclesEntity(
                         client, bms[2], "battery_cycles", "Extra2 battery cycles", 2),
-                    SingleLevelEntity(
-                        client, bms[1], "battery_level_f32", "Extra1 battery", 1),
-                    SingleLevelEntity(
-                        client, bms[2], "battery_level_f32", "Extra2 battery", 2),
+#                    SingleLevelEntity(client, bms[1], "battery_level_f32", "Extra1 battery", 1),
+#                    SingleLevelEntity(client, bms[2], "battery_level_f32", "Extra2 battery", 2),
+                    LevelEntity(client, bms[1], "battery_level_f32", "Extra1 Battery", 1),
+                    LevelEntity(client, bms[2], "battery_level_f32", "Extra2 Battery", 2),
+                    CapacityEntity(
+                        client, bms[1], "battery_capacity_full", "Extra1 battery full capacity", 1),
+                    CapacityEntity(
+                        client, bms[1], "battery_capacity_remain", "Extra1 battery remaining capacity", 1),
+                    CapacityEntity(
+                        client, bms[2], "battery_capacity_full", "Extra2 battery full capacity", 2),
+                    CapacityEntity(
+                        client, bms[2], "battery_capacity_remain", "Extra2 battery remaining capacity", 2),
                     TempEntity(client, bms[1], "battery_temp",
                                "Extra1 battery temperature", 1),
                     TempEntity(client, bms[2], "battery_temp",
                                "Extra2 battery temperature", 2),
+                    TempEntity(client, bms[1], "battery_temp_min",
+                               "Extra1 cell min temp", 1),
+                    TempEntity(client, bms[1], "battery_temp_max",
+                               "Extra1 cell max temp", 1),
+                    TempEntity(client, bms[2], "battery_temp_min",
+                               "Extra2 cell min temp", 2),
+                    TempEntity(client, bms[2], "battery_temp_max",
+                               "Extra2 cell max temp", 2),
+                    TempEntity(client, bms[1], "battery_mos_temp_min",
+                               "Extra1 min mos temp", 1),
+                    TempEntity(client, bms[1], "battery_mos_temp_max",
+                               "Extra1 max mos temp", 1),
+                    TempEntity(client, bms[2], "battery_mos_temp_min",
+                               "Extra2 min mos temp", 2),
+                    TempEntity(client, bms[2], "battery_mos_temp_max",
+                               "Extra2 max mos temp", 2),
+                    VoltageEntity(client, bms[1], "battery_voltage",
+                                  "Extra1 Batt Voltage", 1),
+                    VoltageEntity(client, bms[2], "battery_voltage",
+                                  "Extra2 Batt Voltage", 2),
+                    VoltageEntity(client, bms[1], "battery_voltage_min",
+                                  "Extra1 Cell Min Voltage", 1),
+                    VoltageEntity(client, bms[1], "battery_voltage_max",
+                                  "Extra1 Cell Max Voltage", 1),
+                    VoltageEntity(client, bms[2], "battery_voltage_min",
+                                  "Extra2 Cell Min Voltage", 2),
+                    VoltageEntity(client, bms[2], "battery_voltage_max",
+                                  "Extra2 Cell Max Voltage", 2),
+                    PowerEntity(client, bms[1], "battery_in_power", "EB1 BMS in power", 1),
+                    PowerEntity(client, bms[1], "battery_out_power", "EB1 BMS out power", 1),
+                    PowerEntity(client, bms[2], "battery_in_power", "EB2 BMS in power", 2),
+                    PowerEntity(client, bms[2], "battery_out_power", "EB2 BMS out power", 2),
                     WattsEntity(client, client.pd, "usbqc_out1_power",
                                 "USB-Fast left output"),
                     WattsEntity(client, client.pd, "usbqc_out2_power",
@@ -131,8 +223,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
                 ])
             if is_delta_pro(client.product):
                 entities.extend([
-                    WattsEntity(client, client.mppt,
-                                "anderson_out_power", "Anderson output"),
+                    WattsEntity(client, client.mppt, "anderson_out_power", "Anderson output"),
+                    VoltageEntity(client, client.mppt, "anderson_out_voltage", "Anderson output voltage"),
+                    CurrentEntity(client, client.mppt, "anderson_out_current", "Anderson output current"),
                 ])
         if is_river(client.product):
             extra = client.bms.pipe(select_bms(1), ops.share())
@@ -180,7 +273,7 @@ class BaseEntity(SensorEntity, EcoFlowEntity):
 class CurrentEntity(BaseEntity):
     _attr_device_class = SensorDeviceClass.CURRENT
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_native_unit_of_measurement = ELECTRIC_CURRENT_AMPERE
+    _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
     _attr_state_class = SensorStateClass.MEASUREMENT
 
 
@@ -193,7 +286,7 @@ class CyclesEntity(BaseEntity):
 class EnergyEntity(BaseEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_native_unit_of_measurement = ENERGY_WATT_HOUR
+    _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
 
 
@@ -224,7 +317,7 @@ class FanEntity(BaseEntity):
 class FrequencyEntity(BaseEntity):
     _attr_device_class = SensorDeviceClass.FREQUENCY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_native_unit_of_measurement = FREQUENCY_HERTZ
+    _attr_native_unit_of_measurement = UnitOfFrequency.HERTZ
     _attr_state_class = SensorStateClass.MEASUREMENT
 
 
@@ -264,20 +357,29 @@ class SingleLevelEntity(LevelEntity):
 class TempEntity(BaseEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_native_unit_of_measurement = TEMP_CELSIUS
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
 
 
 class VoltageEntity(BaseEntity):
     _attr_device_class = SensorDeviceClass.VOLTAGE
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_native_unit_of_measurement = ELECTRIC_POTENTIAL_VOLT
+    _attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
     _attr_state_class = SensorStateClass.MEASUREMENT
 
+class CapacityEntity(BaseEntity):
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_native_unit_of_measurement = "Ah"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+class PowerEntity(BaseEntity):
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
 class WattsEntity(BaseEntity):
     _attr_device_class = SensorDeviceClass.POWER
-    _attr_native_unit_of_measurement = POWER_WATT
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, client: HassioEcoFlowClient, src: Observable[dict[str, Any]], key: str, name: str, real: Union[bool, int] = False):
